@@ -22,9 +22,12 @@ module Cloudkick
         "/2.0/nodes"
       when :search
         "/2.0/nodes?query='node:#{resource[:name]}'"
-      when :tag
+      when :addtag
         node_id = get_node_id
         "/2.0/node/#{node_id}/add_tag"
+      when :removetag
+        node_id = get_node_id
+        "/2.0/node/#{node_id}/remove_tag"
       when :searchtags
         "/2.0/tags"
       when :delete
@@ -42,8 +45,7 @@ module Cloudkick
         if response.code == '409'
           Puppet.info("A disabled node with this name already exists. Re-enabling.")
         elsif response.code !~ /^2/
-          Puppet.debug("Code: #{response.code}")
-          Puppet.debug("Body: #{response.body}")
+          error_output(response)
           raise Puppet::Error, "Unable to create node #{resource[:name]}."
         end
 
@@ -60,8 +62,7 @@ module Cloudkick
         Puppet.info("Disabling node #{resource[:name]}")
         response, data = access_token.post(url)
         if not response.code =~ /^2/
-          Puppet.debug("Code: #{response.code}")
-          Puppet.debug("Body: #{response.body}")
+          error_output(response)
           raise Puppet::Error, "Unable to disable node #{resource[:name]}."
         end
     end
@@ -90,8 +91,7 @@ module Cloudkick
     def get_node_id
       response, data = access_token.request(:get, "/2.0/nodes?query=node:#{resource[:name]}")
       if not response.code =~ /^2/
-        Puppet.debug("Code: #{response.code}")
-        Puppet.debug("Body: #{response.body}")
+        error_output(response)
         raise Puppet::Error, "Unable to get node id for #{resource[:name]}."
       end
       parsed = JSON::parse(data)
@@ -106,7 +106,7 @@ module Cloudkick
 
       current_tags = get_current_tags
 
-      url = build_url(resource, :tag)
+      url = build_url(resource, :addtag)
 
       Puppet.info("Applying node tags #{tags.inspect}")
 
@@ -119,8 +119,7 @@ module Cloudkick
         pp url, body
         response, data = access_token.request(:post, url, body)
         if not response.code =~ /^2/
-          Puppet.debug("Code: #{response.code}")
-          Puppet.debug("Body: #{response.body}")
+          error_output(response)
           raise Puppet::Error, "Unable to add node tag #{tag}."
         end
       end
@@ -132,8 +131,7 @@ module Cloudkick
 
       response, data = access_token.request(:get, url)
       if not response.code =~ /^2/
-        Puppet.debug("Code: #{response.code}")
-        Puppet.debug("Body: #{response.body}")
+        error_output(response)
         raise Puppet::Error, "Unable to get list of current tags."
       end
       parsed = JSON::parse(data)
@@ -141,6 +139,11 @@ module Cloudkick
         current_tags << t['name']
       end
       return current_tags
+    end
+
+    def error_output(response)
+      Puppet.debug("Code: #{response.code}")
+      Puppet.debug("Body: #{response.body}")
     end
   end
 end
