@@ -1,0 +1,6 @@
+oauth_key <%= key %>
+oauth_secret <%= secret %>
+name <%= hostname %>
+<% if has_variable?('cloudkick_tags') then %>
+  tags <%= cloudkick_tags %>
+<% end %>
