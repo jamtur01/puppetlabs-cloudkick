@@ -36,7 +36,7 @@ module Cloudkick
       end
     end
 
-    def create_node(resource)
+    def create_node(resources)
         url = build_url(resource, :create)
         body = {:name => resource[:name], :ip_address => resource[:ipaddress]}
 
@@ -49,11 +49,9 @@ module Cloudkick
           raise Puppet::Error, "Unable to create node #{resource[:name]}."
         end
 
-        # Tagging is disabled until I can fix some issues with the API
-        #
-        #if resource[:tags]
-        #  apply_node_tags(resource)
-        #end
+        if resource[:tags]
+          node_tags(resource)
+        end
     end
 
     def delete_node(resource)
@@ -88,27 +86,62 @@ module Cloudkick
         end
     end
 
-    def get_node_id
+    def node_tags(resource)
+      node_tags = get_node_tags
+      tags = resource[:tags]
+      tags.each do |t|
+        unless node_tags.include?(t)
+          add_node_tag(resource,t)
+        end
+      end
+    end
+
+    def get_node
       response, data = access_token.request(:get, "/2.0/nodes?query=node:#{resource[:name]}")
       if not response.code =~ /^2/
         error_output(response)
         raise Puppet::Error, "Unable to get node id for #{resource[:name]}."
       end
-      parsed = JSON::parse(data)
-      if parsed['items'].first['name'] == resource[:name]
-        return parsed['items'].first['id']
+      return JSON::parse(data)
+    end
+
+    def get_node_id
+      node = get_node
+      if node['items'].first['name'] == resource[:name]
+        return node['items'].first['id']
       end
       return nil
     end
 
-    def apply_node_tags(resource)
-      tags = resource[:tags]
+    def get_node_tags
+      node_tags = []
+      node = get_node
+      tags = node['items'].first['tags']
+      tags.each do |t|
+        node_tags << t['name']
+      end
+      return node_tags
+    end
 
+    def add_node_tag(resource, tag)
       current_tags = get_current_tags
-
       url = build_url(resource, :addtag)
 
-      Puppet.info("Applying node tags #{tags.inspect}")
+      if current_tags.include?(tag)
+        body = { :name => tag }
+      else
+        body = { :name => tag, :do_create => true }
+      end
+
+      response, data = access_token.request(:post, url, body)
+      if not response.code =~ /^2/
+        error_output(response)
+        raise Puppet::Error, "Unable to add node tag #{tag}."
+      end
+    end
+
+    def remove_node_tags(resource)
+      url = build_url(resource, :removetag)
 
       tags.each do |tag|
         if current_tags.include?(tag)
