@@ -14,6 +14,17 @@ To remove a node change your include to:
 
     include cloudkick::delete
 
+To configure a Cloudkick node you can use the built-in 
+`cloudkick_node` type like so:
+
+    cloudkick_node { 'node_name':
+      key       => 'key,
+      secret    => 'secret',
+      ipaddress => '192.168.1.1',
+      ensure    => present,
+      tags      => [ 'foo', 'bar' ],
+    }
+
 Author
 ---
 

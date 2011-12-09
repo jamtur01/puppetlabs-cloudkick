@@ -20,7 +20,8 @@ Puppet::Type.newtype(:cloudkick_node) do
     desc "The IP address of the node."
   end
 
-  newparam(:tags) do
+  newproperty(:tags, :array_matching => :all) do
     desc "Tags to be added to the Cloudkick node. Specify a tag or an array of tags."
+
   end
 end

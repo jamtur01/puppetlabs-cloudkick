@@ -37,4 +37,12 @@ Puppet::Type.type(:cloudkick_node).provide(:cloudkick_node) do
   def destroy
     delete_node(resource)
   end
+
+  def tags
+    get_node_tags
+  end
+
+  def tags=(value)
+    set_node_tags(value)
+  end
 end
