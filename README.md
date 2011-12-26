@@ -22,6 +22,7 @@ To configure a Cloudkick node you can use the built-in
       secret    => 'secret',
       ipaddress => '192.168.1.1',
       ensure    => present,
+      color     => '#000000',
       tags      => [ 'foo', 'bar' ],
     }
 

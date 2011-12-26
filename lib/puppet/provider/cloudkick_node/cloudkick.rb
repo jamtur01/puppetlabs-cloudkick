@@ -30,12 +30,19 @@ module Cloudkick
       when :delete
         node_id = get_node_id
         "/2.0/node/#{node_id}/disable"
+      when :update
+        node_id = get_node_id
+        "/2.0/node/#{node_id}"
       end
     end
 
     def create_node(resources)
         url = build_url(resource, :create)
-        body = {:name => resource[:name], :ip_address => resource[:ipaddress]}
+        body = {:name       => resource[:name],
+                :ip_address => resource[:ipaddress],
+                :color      => resource[:color],
+                :tags       => resource[:tags]
+        }
 
         Puppet.info("Creating node #{resource[:name]}")
         response, data = access_token.post(url, body)
@@ -93,6 +100,13 @@ module Cloudkick
       end
     end
 
+    def set_node_color(value)
+      color = get_node_color
+      unless color == value
+        add_node_color(value)
+      end
+    end
+
     def get_node
       response, data = access_token.request(:get, "/2.0/nodes?query=node:#{resource[:name]}")
       if not response.code =~ /^2/
@@ -106,8 +120,9 @@ module Cloudkick
       node = get_node
       if node['items'].first['name'] == resource[:name]
         return node['items'].first['id']
+      else
+        return nil
       end
-      return nil
     end
 
     def get_node_tags
@@ -118,6 +133,22 @@ module Cloudkick
         node_tags << t['name']
       end
       return node_tags.sort
+    end
+
+    def get_node_color
+      node = get_node
+      color = node['items'].first['color']
+      return color
+    end
+
+    def add_node_color(color)
+      url = build_url(resource, :update)
+      body = { :color => color }
+      response, data = access_token.request(:post, url, body)
+      if not response.code =~ /^2/
+        error_output(response)
+        raise Puppet::Error, "Unable to update color #{color}."
+      end
     end
 
     def add_node_tag(node_tags,tag)

@@ -38,6 +38,14 @@ Puppet::Type.type(:cloudkick_node).provide(:cloudkick_node) do
     delete_node(resource)
   end
 
+  def color
+    get_node_color
+  end
+
+  def color=(value)
+    set_node_color(value)
+  end
+
   def tags
     get_node_tags
   end
