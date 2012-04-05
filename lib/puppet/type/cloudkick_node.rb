@@ -32,5 +32,9 @@ Puppet::Type.newtype(:cloudkick_node) do
 
   newproperty(:tags, :array_matching => :all) do
     desc "Tags to be added to the Cloudkick node. Specify a tag or an array of tags."
+
+    def insync?(is)
+      is.sort == @should.sort
+    end
   end
 end
